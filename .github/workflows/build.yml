@@ -21,7 +21,9 @@ jobs:
           sudo apt-get install -y \
             bc bison flex libssl-dev \
             make gcc git python3 \
-            libelf-dev binutils
+            libelf-dev binutils \
+            aarch64-linux-gnu-gcc \
+            gcc-aarch64-linux-gnu
 
       - name: Setup Clang
         run: |
@@ -34,9 +36,14 @@ jobs:
           export ARCH=arm64
           export CC=~/clang/bin/clang
           export CROSS_COMPILE=aarch64-linux-gnu-
-          make O=out \
-            vendor/pineapple_GKI.config
-          make O=out -j$(nproc)
+          mkdir -p out
+          make O=out ARCH=arm64 gki_defconfig
+          cat arch/arm64/configs/vendor/pineapple_GKI.config >> out/.config
+          make O=out ARCH=arm64 olddefconfig
+          make O=out ARCH=arm64 \
+            CC=${CC} \
+            CROSS_COMPILE=${CROSS_COMPILE} \
+            -j$(nproc)
 
       - name: Upload kernel
         uses: actions/upload-artifact@v4

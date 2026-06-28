@@ -1,0 +1,45 @@
+name: Build Kernel
+
+on:
+  push:
+    branches:
+      - oneplus/sm8650_u_14.0.0_oneplus12
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout kernel
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            bc bison flex libssl-dev \
+            make gcc git python3 \
+            libelf-dev binutils
+
+      - name: Setup Clang
+        run: |
+          git clone --depth=1 \
+            https://github.com/ZyCromerZ/Clang \
+            ~/clang
+
+      - name: Build kernel
+        run: |
+          export ARCH=arm64
+          export CC=~/clang/bin/clang
+          export CROSS_COMPILE=aarch64-linux-gnu-
+          make O=out \
+            vendor/pineapple_GKI.config
+          make O=out -j$(nproc)
+
+      - name: Upload kernel
+        uses: actions/upload-artifact@v3
+        with:
+          name: kernel
+          path: out/arch/arm64/boot/Image
